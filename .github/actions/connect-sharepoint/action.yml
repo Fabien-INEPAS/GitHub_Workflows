@@ -1,20 +1,32 @@
-name: Connect to SharePoint
-description: Reusable step for PnP connection
+name: "Connect to SharePoint"
+description: "Reusable composite action to connect with PnP.PowerShell"
+
+inputs:
+  siteUrl:
+    description: "SharePoint site URL"
+    required: true
+  clientId:
+    description: "Azure AD App Client ID"
+    required: true
+  clientSecret:
+    description: "Azure AD App Client Secret"
+    required: true
+  tenant:
+    description: "Tenant name (e.g. tuorg.onmicrosoft.com)"
+    required: true
+
 runs:
   using: "composite"
   steps:
-    - shell: pwsh
+    - name: Install PnP.PowerShell
+      shell: pwsh
       run: |
-        Connect-PnPOnline -Url ${{ inputs.siteUrl }} `
-          -ClientId ${{ inputs.clientId }} `
-          -ClientSecret ${{ inputs.clientSecret }} `
-          -Tenant ${{ inputs.tenant }}
-inputs:
-  siteUrl:
-    required: true
-  clientId:
-    required: true
-  clientSecret:
-    required: true
-  tenant:
-    required: true
+        Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+
+    - name: Connect to SharePoint
+      shell: pwsh
+      run: |
+        Connect-PnPOnline -Url "${{ inputs.siteUrl }}" `
+          -ClientId "${{ inputs.clientId }}" `
+          -ClientSecret "${{ inputs.clientSecret }}" `
+          -Tenant "${{ inputs.tenant }}"
