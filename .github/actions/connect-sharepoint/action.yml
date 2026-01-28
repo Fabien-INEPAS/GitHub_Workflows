@@ -1,0 +1,20 @@
+name: Connect to SharePoint
+description: Reusable step for PnP connection
+runs:
+  using: "composite"
+  steps:
+    - shell: pwsh
+      run: |
+        Connect-PnPOnline -Url ${{ inputs.siteUrl }} `
+          -ClientId ${{ inputs.clientId }} `
+          -ClientSecret ${{ inputs.clientSecret }} `
+          -Tenant ${{ inputs.tenant }}
+inputs:
+  siteUrl:
+    required: true
+  clientId:
+    required: true
+  clientSecret:
+    required: true
+  tenant:
+    required: true
