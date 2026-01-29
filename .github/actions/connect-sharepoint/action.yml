@@ -33,10 +33,9 @@ runs:
           exit 1
         }
 
-        $clientSecret = ConvertTo-SecureString $clientSecretPlain -AsPlainText -Force
-
+        # Do not convert the secret to a SecureString; pass the plain secret string to Connect-PnPOnline
         Connect-PnPOnline `
           -Url "${{ inputs.siteUrl }}" `
           -ClientId "${{ inputs.clientId }}" `
-          -ClientSecret $clientSecret `
+          -ClientSecret $clientSecretPlain `
           -Tenant "${{ inputs.tenant }}"
