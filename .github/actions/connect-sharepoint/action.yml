@@ -21,7 +21,7 @@ runs:
     - name: Install PnP.PowerShell
       shell: pwsh
       run: |
-        Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser -AllowClobber
+        Install-Module -Name PnP.PowerShell -RequiredVersion 1.99.0 -Force -Scope CurrentUser -AllowClobber
 
     - name: Connect to SharePoint
       shell: pwsh
@@ -38,4 +38,5 @@ runs:
           -Url "${{ inputs.siteUrl }}" `
           -ClientId "${{ inputs.clientId }}" `
           -ClientSecret $clientSecretPlain `
+          -Verbose `
           -Tenant "${{ inputs.tenant }}"
