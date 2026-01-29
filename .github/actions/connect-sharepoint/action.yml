@@ -21,14 +21,22 @@ runs:
     - name: Install PnP.PowerShell
       shell: pwsh
       run: |
-        Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+        Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser -AllowClobber
 
     - name: Connect to SharePoint
       shell: pwsh
       run: |
-        if (-not "${{ inputs.clientSecret }}") { Write-Error "Missing clientId or clientSecret input"; exit 1 }
-        $clientSecret = ConvertTo-SecureString "${{ inputs.clientSecret }}" -AsPlainText -Force
-        Connect-PnPOnline -Url "${{ inputs.siteUrl }}" `
+        $clientSecretPlain = "${{ inputs.clientSecret }}"
+
+        if ([string]::IsNullOrWhiteSpace($clientSecretPlain)) {
+          Write-Error "Missing clientSecret input"
+          exit 1
+        }
+
+        $clientSecret = ConvertTo-SecureString $clientSecretPlain -AsPlainText -Force
+
+        Connect-PnPOnline `
+          -Url "${{ inputs.siteUrl }}" `
           -ClientId "${{ inputs.clientId }}" `
           -ClientSecret $clientSecret `
           -Tenant "${{ inputs.tenant }}"
