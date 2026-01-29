@@ -21,22 +21,56 @@ runs:
     - name: Install PnP.PowerShell
       shell: pwsh
       run: |
-        Install-Module -Name PnP.PowerShell -RequiredVersion 1.99.0 -Force -Scope CurrentUser -AllowClobber
-
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $ErrorActionPreference = 'Stop'
+        if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+          Register-PSRepository -Default -ErrorAction Stop
+        } else {
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted -ErrorAction Stop
+        }
+        if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
+          Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser -ErrorAction Stop
+        }
+        Install-Module -Name PowerShellGet -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
+        Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
+    
     - name: Connect to SharePoint
       shell: pwsh
       run: |
+        $siteUrl = "${{ inputs.siteUrl }}"
+        $clientId = "${{ inputs.clientId }}"
         $clientSecretPlain = "${{ inputs.clientSecret }}"
-
+        $tenant = "${{ inputs.tenant }}"
+    
+        if ([string]::IsNullOrWhiteSpace($siteUrl)) {
+          Write-Error "Missing siteUrl input"
+          exit 1
+        }
+        if ([string]::IsNullOrWhiteSpace($clientId)) {
+          Write-Error "Missing clientId input. Check that the secret CLIENT_ID is set in the workflow repository (postTitle_addTags)."
+          exit 1
+        }
         if ([string]::IsNullOrWhiteSpace($clientSecretPlain)) {
           Write-Error "Missing clientSecret input"
           exit 1
         }
-
-        # Do not convert the secret to a SecureString; pass the plain secret string to Connect-PnPOnline
-        Connect-PnPOnline `
-          -Url "${{ inputs.siteUrl }}" `
-          -ClientId "${{ inputs.clientId }}" `
-          -ClientSecret $clientSecretPlain `
-          -Verbose `
-          -Tenant "${{ inputs.tenant }}"
+        if ([string]::IsNullOrWhiteSpace($tenant)) {
+          Write-Error "Missing tenant input"
+          exit 1
+        }
+    
+        Write-Host "Attempting Connect-PnPOnline (with -Tenant)..."
+        try {
+          Connect-PnPOnline -Url $siteUrl -ClientId $clientId -ClientSecret $clientSecretPlain -Tenant $tenant -ErrorAction Stop -Verbose
+          Write-Host "Connected (with -Tenant)."
+        } catch {
+          Write-Host "Connect-PnPOnline with -Tenant failed: $_"
+          Write-Host "Retrying Connect-PnPOnline without -Tenant..."
+          try {
+            Connect-PnPOnline -Url $siteUrl -ClientId $clientId -ClientSecret $clientSecretPlain -ErrorAction Stop -Verbose
+            Write-Host "Connected (without -Tenant)."
+          } catch {
+            Write-Error "Connect-PnPOnline failed after retry: $_"
+            exit 1
+          }
+        }
